@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: node-container
-        image: <replace-me-later>
+        image: <replace-me-later>  # Jenkins will replace this line with actual image
         ports:
         - containerPort: 3000
