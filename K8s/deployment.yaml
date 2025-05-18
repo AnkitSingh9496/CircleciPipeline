@@ -12,8 +12,30 @@ spec:
       labels:
         app: node-app
     spec:
+      imagePullSecrets:
+      - name: ecr-registry-credentials
       containers:
       - name: node-container
-        image: <replace-me-later>  # Jenkins will replace this line with actual image
+        image: <replace-me-later>  # Jenkins will replace this with actual image tag
         ports:
         - containerPort: 3000
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: node-app
+# spec:
+#   replicas: 2
+#   selector:
+#     matchLabels:
+#       app: node-app
+#   template:
+#     metadata:
+#       labels:
+#         app: node-app
+#     spec:
+#       containers:
+#       - name: node-container
+#         image: <replace-me-later>  # Jenkins will replace this line with actual image
+#         ports:
+#         - containerPort: 3000
