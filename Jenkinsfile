@@ -11,7 +11,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('* * * * *') // Enables GitHub webhook trigger for pipeline
+        pollSCM('* * * * *') // Enables GitHub webhook trigger to pipeline
     }
 
     tools {
