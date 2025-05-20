@@ -7,7 +7,7 @@ pipeline {
         ECR_REGISTRY          = "244706281787.dkr.ecr.${AWS_REGION}.amazonaws.com"
         IMAGE_TAG             = "${BUILD_ID}"
         DOCKER_IMAGE          = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
-        // Replace it with your actual AWS credentials
+        // Replace it with your actual AWS Credentials
         AWS_ACCESS_KEY_ID     = ''
         AWS_SECRET_ACCESS_KEY = ''
         AWS_SESSION_TOKEN     = ''
