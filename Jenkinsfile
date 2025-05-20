@@ -1,117 +1,96 @@
 pipeline {
     agent any
-    
+
     environment {
-        AWS_REGION = 'ap-south-1'
-        ECR_REPO = 'circleci'
-        ECR_REGISTRY = '244706281787.dkr.ecr.ap-south-1.amazonaws.com/circleci'
-        IMAGE_TAG = "${env.BUILD_ID}"
-        DOCKER_IMAGE = "${ECR_REGISTRY}:${IMAGE_TAG}"
+        AWS_REGION            = 'ap-south-1'
+        ECR_REPO              = 'circleci'
+        ECR_REGISTRY          = "244706281787.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_TAG             = "${BUILD_ID}"
+        DOCKER_IMAGE          = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
+
+        AWS_ACCESS_KEY_ID     = ''
+        AWS_SECRET_ACCESS_KEY = ''
+        AWS_SESSION_TOKEN     = ''
     }
-    
+
     tools {
         nodejs 'NodeJS_16'
     }
-    
+
     stages {
-        stage('Clone Repo') {
+        stage('Clone Repository') {
             steps {
-                echo 'Cloning repo...'
-                checkout scm
-                // Alternatively, if you're not using multibranch pipeline:
-                // git branch: 'main', url: 'https://github.com/AnkitSingh9496/JekinsPipeline.git'
-            }
-        }
-        
-        stage('Install Dependencies') {
-            steps {
-                echo 'Installing dependencies...'
-                // Use a shell wrapper to ensure npm command is found
-                sh '''
-                    export PATH=$PATH:$NODEJS_HOME/bin
-                    npm --version
-                    npm install
-                '''
-            }
-        }
-        
-        stage('Build Docker Image') {
-            steps {
-                echo 'Building Docker image...'
-                sh "docker build -t ${DOCKER_IMAGE} ."
-            }
-        }
-        
-        stage('Login to ECR') {
-            steps {
-                echo 'Logging in to Amazon ECR...'
-                withAWS(region: "${AWS_REGION}", credentials: 'aws-credentials') {
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                script {
+                    echo 'Cleaning previous repo clone if exists...'
+                    sh 'rm -rf JekinsPipeline'
+
+                    echo 'Cloning repository manually...'
+                    sh 'git clone https://github.com/AnkitSingh9496/JekinsPipeline.git'
                 }
             }
         }
-        
-        stage('Push Image to ECR') {
+
+        stage('Install Node.js Dependencies') {
             steps {
-                echo 'Pushing Docker image to ECR...'
+                dir('JekinsPipeline') {
+                    echo 'Installing Node.js dependencies...'
+                    sh '''
+                        export PATH=$PATH:$NODEJS_HOME/bin
+                        npm install
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('JekinsPipeline') {
+                    echo "Building Docker image: ${DOCKER_IMAGE}"
+                    sh "docker build -t ${DOCKER_IMAGE} ."
+                }
+            }
+        }
+
+        stage('Authenticate with ECR') {
+            steps {
+                echo 'Authenticating with AWS ECR...'
+                script {
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            steps {
+                echo "Pushing Docker image: ${DOCKER_IMAGE}"
                 sh "docker push ${DOCKER_IMAGE}"
             }
         }
-        
-        stage('Deploy to EKS') {
+
+        stage('Deploy to Amazon EKS') {
             steps {
-                echo 'Deploying to EKS...'
-                withAWS(region: "${AWS_REGION}", credentials: 'aws-credentials') {
+                dir('JekinsPipeline') {
+                    echo 'Deploying the application to EKS...'
                     script {
-                        sh "sed -i 's|image:.*|image: ${DOCKER_IMAGE}|' k8s/deployment.yaml"
-                        sh "kubectl apply -f k8s/"
+                        // Set up kubeconfig
+                        sh """
+                            aws eks update-kubeconfig --region ${AWS_REGION} --name CircleCI
+                        """
+
+                        echo "Listing files in the directory..."
+                        sh "ls -la k8s"
+
+                        // Modify the deployment.yaml file and apply it
+                        sh """
+                            sed -i 's|image:.*|image: ${DOCKER_IMAGE}|' k8s/deployment.yaml
+                            kubectl apply -f k8s/deployment.yaml
+                            kubectl apply -f k8s/service.yaml
+                        """
                     }
                 }
             }
         }
     }
-    
-    post {
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Pipeline execution failed!'
-        }
-        always {
-            echo 'Cleaning workspace...'
-            cleanWs()
-        }
-    }
 }
-// pipeline {
-//     agent any
-
-//     tools {
-//         nodejs 'NodeJS_16' 
-//     }
-
-//     stages {
-//         stage('Clone Repo') {
-//             steps {
-//                 echo 'Cloning repo...'
-//                 git branch: 'main', url: 'https://github.com/AnkitSingh9496/JekinsPipeline.git'
-//             }
-//         }
-
-//         stage('Install Dependencies') {
-//             steps {
-//                 echo 'Installing dependencies...'
-//                 sh 'npm install'
-//             }
-//         }
-
-//         stage('Run App') {
-//             steps {
-//                 echo 'Starting app...'
-//                 sh 'node index.js &'
-//                 sh 'sleep 5'
-//             }
-//         }
-//     }
-// }
