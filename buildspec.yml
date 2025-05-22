@@ -1,0 +1,44 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+    commands:
+      # Log into AWS ECR
+      - echo "Logging into AWS ECR..."
+      - $(aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 244706281787.dkr.ecr.ap-south-1.amazonaws.com)
+
+  pre_build:
+    commands:
+      # Define your Docker image name and ECR repository
+      - IMAGE_NAME=circleci
+      - REPOSITORY_URI=244706281787.dkr.ecr.ap-south-1.amazonaws.com/$IMAGE_NAME
+      - TAG=latest
+      # Ensure your Dockerfile exists in the project directory
+      - echo "Preparing Docker build..."
+
+  build:
+    commands:
+      # Build the Docker image
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_NAME -f ./Dockerfile .
+
+  post_build:
+    commands:
+      # Tag the Docker image with ECR repository URI
+      - echo "Tagging Docker image..."
+      - docker tag $IMAGE_NAME:$TAG $REPOSITORY_URI:$TAG
+      # Push the Docker image to Amazon ECR
+      - echo "Pushing Docker image to ECR..."
+      - docker push $REPOSITORY_URI:$TAG
+
+      # Now, deploy the Docker image to Amazon EKS
+      - echo "Deploying to Amazon EKS..."
+      - aws eks update-kubeconfig --name CircleCI --region ap-south-1
+      - kubectl apply -f k8s/deployment.yaml
+      - kubectl apply -f k8s/service.yaml
+
+artifacts:
+  files:
+    - '**/*'

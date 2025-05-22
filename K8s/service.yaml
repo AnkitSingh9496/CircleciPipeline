@@ -1,12 +1,32 @@
+# k8s/service.yaml for AWS CodePipeline
 apiVersion: v1
 kind: Service
 metadata:
   name: node-service
 spec:
   selector:
-    app: node-app
+    app: node-app 
   ports:
     - protocol: TCP
       port: 80
       targetPort: 3000
-  type: LoadBalancer
+  type: LoadBalancer 
+
+
+
+
+
+
+#K8s\service.yaml for Jenkins Pipeline
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: node-service
+# spec:
+#   selector:
+#     app: node-app
+#   ports:
+#     - protocol: TCP
+#       port: 80
+#       targetPort: 3000
+#   type: LoadBalancer
