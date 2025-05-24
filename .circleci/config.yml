@@ -1,0 +1,52 @@
+version: 2.1
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:18.20
+
+jobs:
+  build:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: npm install
+      - run:
+          name: Run Tests
+          command: npm test
+      - run:
+          name: Run Build (if applicable)
+          command: npm run build
+
+  deploy:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Install SSH Client
+          command: sudo apt-get update && sudo apt-get install -y openssh-client
+      - add_ssh_keys:
+          fingerprints:
+            - "your_fingerprint_here"
+      - run:
+          name: Copy Files to EC2
+          command: |
+            scp -o StrictHostKeyChecking=no -r . ec2-user@<EC2_PUBLIC_IP>:/home/ec2-user/app
+      - run:
+          name: Start Node App on EC2
+          command: |
+            ssh -o StrictHostKeyChecking=no ec2-user@<EC2_PUBLIC_IP> << 'EOF'
+              cd /home/ec2-user/app
+              npm install
+              nohup node index.js > app.log 2>&1 &
+            EOF
+
+workflows:
+  build_and_deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build

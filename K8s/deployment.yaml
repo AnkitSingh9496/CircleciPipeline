@@ -1,4 +1,4 @@
-# k8s/deployment.yaml for AWS CodePipeline
+# K8s\deployment.yaml for Jenkins Pipeline
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,14 +15,11 @@ spec:
     spec:
       containers:
       - name: node-container
-        image: 244706281787.dkr.ecr.ap-south-1.amazonaws.com/circleci:latest  # Use the ECR image URI
+        image: <replace-me-later> 
         ports:
         - containerPort: 3000
 
-
-
-
-#K8s\deployment.yaml for Jenkins Pipeline
+# # k8s/deployment.yaml for AWS CodePipeline
 # apiVersion: apps/v1
 # kind: Deployment
 # metadata:
@@ -39,7 +36,7 @@ spec:
 #     spec:
 #       containers:
 #       - name: node-container
-#         image: <replace-me-later> 
+#         image: 244706281787.dkr.ecr.ap-south-1.amazonaws.com/circleci:latest  # Use the ECR image URI
 #         ports:
 #         - containerPort: 3000
 
